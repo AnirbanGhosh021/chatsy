@@ -1,9 +1,15 @@
 import express from "express"
-const router = express.Router();
+import { getAllContacts, getChatPartners, getMessagesByUserId, sendMessage,  } from "../controllers/message.controllers.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
+import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 
-router.get("/send", (req,res)=>{
-    res.send("Send message end point")
-})
+const router = express.Router();
+router.use(arcjetProtection,protectRoute)
+
+router.get("/contacts", getAllContacts)
+router.get("/chats", getChatPartners)
+router.get("/:id", getMessagesByUserId)
+router.post("/send/:id", sendMessage)
 
 
 
