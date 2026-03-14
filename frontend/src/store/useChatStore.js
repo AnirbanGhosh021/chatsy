@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
+import {useAuthStore} from "./useAuthStore.js"
+import toast from "react-hot-toast";
 
 export const useChatStore = create((set, get) => ({
     allContacts: [],
@@ -9,7 +11,7 @@ export const useChatStore = create((set, get) => ({
     selectedUser: null,
     isUserLoading: false,
     isMessagesLoading: false,
-    isSoundEnabled:JSON.parse( localStorage.getItem("isSoundEnabled") )=== true,
+    isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
 
     toggleSound: () => {
         localStorage.setItem("isSoundEnabled", !get().isSoundEnabled)
@@ -25,7 +27,7 @@ export const useChatStore = create((set, get) => ({
             set({ allContacts: res.data });
         } catch (error) {
             console.log("Error in allContacts", error);
-           
+
         } finally {
             set({ isUserLoading: false });
         }
@@ -36,10 +38,52 @@ export const useChatStore = create((set, get) => ({
             const res = await axiosInstance.get("/messages/chats");
             set({ chats: res.data });
         } catch (error) {
-            console.log("Error in allContacts", error);        
+            console.log("Error in allContacts", error);
         } finally {
             set({ isUserLoading: false });
         }
+    },
+
+
+    getMessagesByUserId: async (userId) => {
+        set({ isMessagesLoading: true })
+        try {
+            const res = await axiosInstance.get(`/messages/${userId}`);
+            set({ messages: res.data });
+        } catch (error) {
+            console.log("Error in GetMessages", error);
+                toast.error(error?.response?.data?.message || "Messages Fatch  failed");
+
+        } finally {
+            set({ isMessagesLoading: false });
+        }
+    },
+    sendMessage: async (messageData) => {
+        const {selectedUser ,messages} =get()
+        const {authUser} = useAuthStore.getState()
+
+        const tempId = `temp-${Date.now()}`
+        const opimisticMessage = {
+            _id : tempId,
+            senderId: authUser._id,
+            receiverId:selectedUser._id,
+            text: messageData.text,
+            image : messageData.image,
+            createdAt : new Date().toISOString(),
+            isOptimistic : true,
+
+        }
+
+        set({messages : [...messages,opimisticMessage]})
+        try {
+            const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`,messageData);
+            set({ messages: messages.concat(res.data) });
+        } catch (error) {
+            set({messages : messages})
+            console.log("Error in Send Message ", error);
+                toast.error(error?.response?.data?.message || "Messages send  failed");
+
+        } 
     }
 
 }))
