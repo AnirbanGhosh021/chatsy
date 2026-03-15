@@ -72,7 +72,7 @@ function LoginPage() {
                       />
                     </div>
                   </div>
-                  <button className='auth-btn' type='submit' disabled={isLoggingIn}>
+                  <button className='auth-btn flex items-center justify-center' type='submit' disabled={isLoggingIn}>
                     {
                       isLoggingIn ? (
                         <LoaderIcon className='w-full h-5 animate-spin text-center' />

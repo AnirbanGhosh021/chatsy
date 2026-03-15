@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import Message from "../models/message.js";
 import User from "../models/User.js";
 import cloudinary from "../lib/cloudinary.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
+import mongoose from "mongoose"
 
 
 
@@ -51,50 +53,67 @@ export const getMessagesByUserId = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
-    const { id: receiverId } = req.params;
-    const senderId = req.user._id;
-
-    let imageUrl;
+    const { text, image } = req.body
+    const { id: receiverId } = req.params
+    const senderId = req.user._id
 
     if (!text && !image) {
-      return res.status(400).json({ message: "Text or image required" });
+      return res.status(400).json({ message: "Text or image required" })
     }
 
-    // Prevent messaging yourself
     if (senderId.equals(receiverId)) {
-      return res.status(400).json({ message: "You cannot message yourself" });
+      return res.status(400).json({ message: "You cannot message yourself" })
     }
 
-    // Check if receiver exists
-    const receiverExists = await User.exists({ _id: receiverId });
+    // Validate Mongo ID
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver ID" })
+    }
 
+    const receiverExists = await User.exists({ _id: receiverId })
     if (!receiverExists) {
-      return res.status(404).json({ message: "Receiver not found" });
+      return res.status(404).json({ message: "Receiver not found" })
     }
 
-    // Upload image if exists
+    let imageUrl
+
+    // Upload image safely
     if (image) {
-      const uploadResponse = await cloudinary.uploader.upload(image);
-      imageUrl = uploadResponse.secure_url;
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(image, {
+          folder: "chat-app/messages",
+        })
+        imageUrl = uploadResponse.secure_url
+      } catch (uploadError) {
+        console.error("Cloudinary error:", uploadError)
+        return res.status(400).json({
+          message: "Image upload failed"
+        })
+      }
     }
 
-    const newMessage = new Message({
+    const newMessage = await Message.create({
       senderId,
       receiverId,
       text,
       image: imageUrl
-    });
+    })
 
-    await newMessage.save();
+    const receiverSocketId = getReceiverSocketId(receiverId)
 
-    res.status(201).json(newMessage);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage)
+    }
+
+    res.status(201).json(newMessage)
 
   } catch (error) {
-    console.log("Error in sendMessage controller", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error in sendMessage controller:", error)
+    res.status(500).json({
+      message: error.message || "Internal server error"
+    })
   }
-};
+}
 
 
 export const getChatPartners = async (req, res) => {
