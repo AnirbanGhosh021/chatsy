@@ -3,6 +3,6 @@ export const axiosInstance =  axios.create({
     baseURL:
   import.meta.env.MODE === "development"
     ? " https://chats-1backends.onrender.com/api"
-    : "http://localhost:3000/api",
+    : "https://chatsy-back-h2f0.onrender.comapi",
     withCredentials: true
 })
