@@ -1,8 +1,5 @@
 import axios from "axios";
 export const axiosInstance =  axios.create({
-    baseURL:
-  import.meta.env.MODE === "development"
-    ? " http://localhost:3000/api"
-    : "http://localhost:3000/api",
+    baseURL:  "https://chatsy-backens.onrender.com",
     withCredentials: true
 })
