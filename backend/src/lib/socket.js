@@ -9,7 +9,7 @@ const server = http.createServer(app)
 
 const io = new Server(server, {
   cors: {
-    origin: [ENV.CLIENT_URL],
+    origin: "https://chatsy-frontend-j9k6.onrender.com"],
     credentials: true,
   },
 })
