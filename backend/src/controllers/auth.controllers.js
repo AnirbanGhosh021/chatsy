@@ -4,6 +4,7 @@ import { generateToken } from "../lib/utils.js";
 import { sendWelcomeEmail } from "../emails/emailHandlers.js";
 import 'dotenv/config'
 import cloudinary from "../lib/cloudinary.js";
+const   CLIENT_URL ="https://chatsy-frontend-j9k6.onrender.com"
 
 export const singup = async (req, res) => {
 
@@ -49,7 +50,7 @@ export const singup = async (req, res) => {
       await sendWelcomeEmail(
         savedUser.email,
         savedUser.fullName,
-        process.env.CLIENT_URL
+        CLIENT_URL
       );
     } catch (error) {
       console.log("Failed to send welcome email", error);
